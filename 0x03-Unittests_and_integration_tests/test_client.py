@@ -2,9 +2,9 @@
 '''Parameterize and patch as decorators'''
 
 
+from typing import Dict
 import unittest
-from unittest.mock import Mock, PropertyMock, patch
-from more_itertools import side_effect
+from unittest.mock import MagicMock, Mock, PropertyMock, patch
 from parameterized import parameterized, parameterized_class
 import requests
 
@@ -17,7 +17,7 @@ class TestGithubOrgClient(unittest.TestCase):
 
     @parameterized.expand([('google',), ('abc',)])
     @patch("client.get_json")
-    def test_org(self, org_name, mock_get_json):
+    def test_org(self, org_name: str, mock_get_json: MagicMock) -> None:
         '''testing the "GithubOrgClient.org"'''
 
         github_client = GithubOrgClient(org_name)
@@ -27,7 +27,7 @@ class TestGithubOrgClient(unittest.TestCase):
 
         mock_get_json.assert_called_once_with(expected_argument)
 
-    def test_public_repos_url(self):
+    def test_public_repos_url(self) -> None:
         '''testing "GithubOrgClient._public_repos_url"'''
 
         expected_url = "https://api.github.com/orgs/google/repos"
@@ -45,7 +45,7 @@ class TestGithubOrgClient(unittest.TestCase):
             self.assertEqual(git._public_repos_url, expected_url)
 
     @patch('client.get_json')
-    def test_public_repos(self, mock_get_json):
+    def test_public_repos(self, mock_get_json: MagicMock) -> None:
         '''testing "GithubOrgClient.public_repos"'''
 
         mock_get_json.return_value = TEST_PAYLOAD[0][1]
@@ -69,7 +69,9 @@ class TestGithubOrgClient(unittest.TestCase):
         ({"license": {"key": "my_license"}}, "my_license", True),
         ({"license": {"key": "other_license"}}, "my_license", False)
     ])
-    def test_has_license(self, repo, license_key, expected):
+    def test_has_license(
+            self, repo: Dict,
+            license_key: str, expected: bool) -> None:
         '''testing "GithubOrgClient.has_license"'''
         self.assertEqual(GithubOrgClient.has_license(
             repo, license_key), expected)
@@ -85,7 +87,7 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
     '''Integration test to test the interaction between multiple functions'''
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         '''setting up fixtures for testing'''
         routs_payload = {
             'https://api.github.com/orgs/google': cls.org_payload,
@@ -93,6 +95,7 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         }
 
         def mock_requests_get(url: str):
+            '''mocking the "requests.get"'''
             if url in routs_payload:
                 return Mock(**{'json.return_value': routs_payload[url]})
             return requests.HTTPError
@@ -101,18 +104,18 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         cls.get_patcher.start()
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         '''stop the patcher'''
         cls.get_patcher.stop()
 
-    def test_public_repos(self):
+    def test_public_repos(self) -> None:
         '''integration test for GithubOrgClient.public_repos'''
         self.assertEqual(
             GithubOrgClient('google').public_repos(),
             self.expected_repos
         )
 
-    def test_public_repos_with_license(self):
+    def test_public_repos_with_license(self) -> None:
         '''
         integration test for GithubOrgClient.public_repos
         public_repos with the argument license="apache-2.0"
